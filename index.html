@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>StudyTogether AI</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background:#f5f7fb; margin:0; display:flex; flex-direction:column; align-items:center; }
+    .container { width:95%; max-width:620px; margin:18px auto; }
+    header { text-align:center; margin-bottom:8px; }
+    #chatbox { background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(20,30,50,0.08); padding:12px; height:70vh; display:flex; flex-direction:column; }
+    #messages { flex:1; overflow:auto; padding-right:6px; }
+    .msg { margin:8px 0; line-height:1.35; max-width:85%; padding:8px 10px; border-radius:10px; }
+    .user { margin-left:auto; background:#e6f0ff; color:#03396c; text-align:right; }
+    .bot { margin-right:auto; background:#f0f3f7; color:#111; text-align:left; }
+    #composer { display:flex; gap:8px; margin-top:10px; }
+    #input { flex:1; padding:10px 12px; border-radius:8px; border:1px solid #d7dde6; }
+    button { padding:9px 12px; border-radius:8px; border:none; background:#0b6cff; color:#fff; cursor:pointer; }
+    small.hint { color:#666; display:block; margin-top:6px; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h2>🤖 StudyTogether AI</h2>
+      <small class="hint">Gõ câu hỏi học tập — bot trả lời ngắn gọn, hữu ích. (Chưa cho phép trả bài thay thế học tập)</small>
+    </header>
+
+    <div id="chatbox" role="application" aria-label="StudyTogether chat">
+      <div id="messages"></div>
+
+      <div id="composer">
+        <input id="input" placeholder="Nhập câu hỏi học tập..." aria-label="Nhập câu hỏi" />
+        <button id="send">Gửi</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const messages = document.getElementById('messages');
+
+function addMessage(text, cls){
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls;
+  d.innerText = text;
+  messages.appendChild(d);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function ask(prompt){
+  addMessage(prompt, 'user');
+  try{
+    addMessage('Đang trả lời...', 'bot');
+    const q = encodeURIComponent(prompt);
+    const res = await fetch('/api/chat?prompt=' + q);
+    const data = await res.json();
+    // remove the 'Đang trả lời...' placeholder (last bot msg)
+    const last = messages.querySelectorAll('.bot');
+    if(last.length) last[last.length-1].remove();
+    if(data && data.reply) addMessage(data.reply, 'bot');
+    else addMessage('Lỗi: không nhận được trả lời.', 'bot');
+  } catch(err){
+    addMessage('Lỗi kết nối: ' + err.message, 'bot');
+  }
+}
+
+sendBtn.addEventListener('click', () => {
+  const v = input.value.trim();
+  if(!v) return;
+  ask(v);
+  input.value = '';
+});
+input.addEventListener('keypress', (e) => {
+  if(e.key === 'Enter'){ sendBtn.click(); }
+});
+</script>
+</body>
+</html>
